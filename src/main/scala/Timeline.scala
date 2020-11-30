@@ -1,10 +1,19 @@
 sealed trait Artifact
+// What if we just provide Artifact and the users are free to define their language hierarchy on the fly?
+// They would just need to implement what they need and that's it.
 
-final case class Folder(name: String, parent: Folder) extends Artifact
+object Artifact {
+  def allClasses(): Artifact = AnyFolder(AnyFile(AnyClass()))
 
-final case class File(name: String, parent: Folder) extends Artifact
+  def allClassesInFolder(name: String): Artifact = AnyFolder(Folder(name, AnyFile(AnyClass())))
 
-final case class Class(name: String) extends Artifact
+  def allClassesInRecursiveFolder(folder: String): Artifact = AnyFolder(Folder(folder, AnyFolder(AnyFile(AnyClass()))))
+}
+
+final case class AnyFolder(artifact: Artifact) extends Artifact
+final case class Folder(name:String, artifact: Artifact) extends Artifact
+final case class AnyFile(artifact: Artifact) extends Artifact
+final case class AnyClass() extends Artifact // This case class could accept an artifact to enable better portability
 
 // For now, folders contains String instead of instances of Folder to keep things simple
 final case class Repository(url: String, folders: List[String] = List.empty) {
@@ -26,12 +35,9 @@ object Timeline extends App {
 
   val where = Repository("https://github.com/danilofes/refactoring-toy-example").in("src")
   val when = Version("aef023").to("4bbb34")
-  val latest = Latest
+  val latest = Latest // latest commit in the repository
 
-  val oneClassFQ = Folder("Foo").folder("bar").class
-  val everyFileInFolder = ???
-  val everyFileInFolderRecursive = ???
-
-  println(where)
-  println(when)
+  val allClasses = Artifact.allClasses()
+  val allClassesInFolder = Artifact.allClassesInFolder("foo")
+  val allClassesInRecursiveFolder = Artifact.allClassesInRecursiveFolder("foo")
 }
