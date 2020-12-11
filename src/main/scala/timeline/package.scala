@@ -131,7 +131,7 @@ package object timeline {
             accResult.toList.sortWith((left, right) => left._1.compareTo(right._1) < 0).foreach(tuple => println(f"   ${tuple._1}%-15s -> ${tuple._2}"))
             printResults(tail, cache, accResult)
           case None =>
-            println("No files matching the query")
+            println("   No files matching the query")
             printResults(tail, cache, carry)
         }
       case Nil =>
