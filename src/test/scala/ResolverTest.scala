@@ -3,7 +3,7 @@ import timeline._
 import timeline.mock.vcs._
 
 object ResolverTest extends App {
-  val v = IO.Folder("ROOT",
+  val v = IO.Folder("SRC",
     Set(
       IO.Folder("A",
         Set(IO.Folder("B",
@@ -14,7 +14,7 @@ object ResolverTest extends App {
         Set(IO.File("trap")))),
     Set(IO.File("readme.md"), IO.File(".gitignore")))
 
-  println(resolve(Artifact.Folder("ROOT", Artifact.AnyFile()), version1))
+  println(resolve(Artifact.Folder("SRC", Artifact.AnyFile()), version1))
   println("===============")
   println(resolve(Artifact.AnyFolder(Artifact.Folder("B", Artifact.AnyFile())), version2))
   println("---------------")
@@ -24,5 +24,5 @@ object ResolverTest extends App {
   println("===============")
   println(resolve(AnyFolder(Artifact.Folder("A", Artifact.Folder("B", Artifact.AnyFile()))), v))
   println("---------------")
-  println(resolve(Artifact.Folder("ROOT", Artifact.AnyFolder(Artifact.Folder("B", Artifact.AnyFile()))), version4))
+  println(resolve(Artifact.Folder("SRC", Artifact.AnyFolder(Artifact.Folder("B", Artifact.AnyFile()))), version4))
 }

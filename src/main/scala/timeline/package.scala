@@ -1,7 +1,11 @@
 import timeline.Artifact.{AnyFile, AnyFolder}
-import timeline.IO.{File, Folder}
+import timeline.IO.{File, Folder, Path}
+
+import scala.annotation.tailrec
 
 package object timeline {
+
+  type Error = String
 
   object Artifact {
     sealed trait Artifact
@@ -44,29 +48,32 @@ package object timeline {
 
     case class Folder(name: String, subfolders: Set[Folder] = Set.empty, files: Set[File] = Set.empty) extends FileSystem
     case class File(name: String) extends FileSystem
+
+    type Path = String
   }
 
-  type Error = String
-
-  type VersionedArtifacts = Map[Version, List[Artifact.Artifact]]
-
-  type Path = String
-
-  def repositoryExists(repository: Repository): Either[Error, Unit] = {
-    Either.cond(repository.url.isBlank, println("Repository checked!"), "The repository is missing")
+  def repositoryExists(repository: Repository): Either[Error, Boolean] = {
+    Either.cond(!repository.url.isBlank, true, "The repository is missing")
   }
 
   def retrieveVersions(history: History): Either[Error, List[Version]] = {
     history match {
-      case Latest => ??? // Obtain latest from VCS
-      case Range(from, to) => ??? // Obtain list of version from VCS
+      case Latest => Left("Latest version is not yet supported")
+      case Range(from, to) =>  Right(timeline.mock.vcs.versionRange(from, to).map(id => Version(id)))
       case version@Version(_) => Right(List(version))
     }
   }
 
-  def retrieveChanges(versions: List[Version]): Either[Error, VersionedArtifacts] = ???
+  def retrieveChanges(versions: List[Version]): Either[Error, Map[Version, IO.FileSystem]] = {
+    Right(versions.map(
+      version =>  timeline.mock.vcs.getDiffs(version) match {
+        case Some(x) => version -> x
+      }).toMap)
+  }
 
-  def resolveArtifacts(what: Artifact.Artifact, artifacts: VersionedArtifacts): Either[Error, Map[Version, List[Path]]] = ???
+  def resolveArtifacts(what: Artifact.Artifact, changes: Map[Version, IO.FileSystem]): Either[Error, Map[Version, Set[Path]]] = {
+    Right(changes map {case (version,fileSystem) => version -> resolve(what, fileSystem)})
+  }
 
   def resolve(what: Artifact.Artifact, filesystem: IO.FileSystem, path:Path = ""): Set[Path] = {
     (what, filesystem) match {
@@ -90,7 +97,7 @@ package object timeline {
 
   case class Task(version: Version, artifacts:Set[Path])
 
-  def dispatcher(resolvedChanges: Map[Version, List[Path]]): Either[Error, Set[Task]] = {
+  def dispatcher(resolvedChanges: Map[Version, Set[Path]]): Either[Error, Set[Task]] = {
     // This is a naive conversion to task, each file gets it's own task
 
     val result = for {
@@ -101,23 +108,33 @@ package object timeline {
     Right(result.toSet)
   }
 
-  case class Cache() {
-    def get(version: Version, artifact: Path): Int = {
-      ???
-    }
+  def analyze(task: timeline.Task): Map[Path, Int] = {
+    timeline.mock.analyzer.run(task)
   }
 
-  def analyze(task: timeline.Task, cache: Cache): Cache = {
-    val result = timeline.mock.analyzer.run(task)
-//    Cache(result, cache)
-    Cache()
-  }
-
+  type Cache = Map[Version, Set[(Path, Int)]]
   def executeTasks(tasks: Set[Task]): Either[Error, Cache] = {
-    var cache = Cache()
-    for(task <- tasks){
-      cache = analyze(task, cache)
+    // Group the result of each task by version
+    Right(tasks.map(task => (task.version, analyze(task))).groupBy(_._1).map(e => e._1 -> e._2.flatMap(_._2)))
+  }
+
+  @tailrec
+  def printResults(versions: List[Version], cache: Cache, carry: Set[(Path, Int)] = Set.empty): Unit = {
+    versions match {
+      case head :: tail =>
+        println(s"Version ${head.id}:")
+        val option = cache.get(head)
+
+        option match {
+          case Some(data) =>
+            val accResult = data ++ carry.filter(oldTuple => !data.map(tuple => tuple._1).contains(oldTuple._1))
+            accResult.toList.sortWith((left, right) => left._1.compareTo(right._1) < 0).foreach(tuple => println(f"   ${tuple._1}%-15s -> ${tuple._2}"))
+            printResults(tail, cache, accResult)
+          case None =>
+            println("No files matching the query")
+            printResults(tail, cache, carry)
+        }
+      case Nil =>
     }
-    Right(cache)
   }
 }
