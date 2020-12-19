@@ -21,11 +21,10 @@ package object timeline {
 
     final case class AnyFile() extends Artifact
 
+    // Two sugared artifact specification
     def allFiles(): Artifact = AnyFolder(AnyFile())
 
     def allClassesInFolder(name: String): Artifact = AnyFolder(Folder(name, AnyFile()))
-
-    def allClassesInRecursiveFolder(folder: String): Artifact = AnyFolder(Folder(folder, AnyFolder(AnyFile())))
   }
 
   // For now, folders contains String instead of instances of Folder to keep things simple
