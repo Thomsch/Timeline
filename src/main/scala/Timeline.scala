@@ -3,7 +3,7 @@ import timeline.Artifact._
 
 object Timeline extends App {
 
-  val where = Repository("https://github.com/thomsch/timeline-example") // Repository specification
+  val where = Repository("https://github.com/user/example") // Repository specification
   val when = Version("v1").to("v4") // Various ways to select versions or branches (e.g., Branch('main'))
   val what = AnyFolder(Folder("B", AnyFile())) // Match any file in folder 'B' anywhere in the repository
 
@@ -21,21 +21,20 @@ object Timeline extends App {
     case Left(value) => println(s"Error: $value")
 
     // Print the analysis result for each file matching the artifact specification (what) for selected versions.
-    case Right((versions, cache)) => printResults(versions, cache)
+    case Right((versions, cache)) => postProcess(versions, cache)
+    /* Will output:
+    Version v1:
+      No files matching the query
+    Version v2:
+      /SRC/B/fooB     -> 3
+    Version v3:
+      /SRC/B/barB     -> 5
+      /SRC/B/fooB     -> 3
+    Version v4:
+      /SRC/A/B/barAB  -> 2
+      /SRC/A/B/fooAB  -> 1
+      /SRC/B/barB     -> 5
+      /SRC/B/fooB     -> 7
+    */
   }
-
-  /*
-  Version v1:
-     No files matching the query
-  Version v2:
-     /SRC/B/fooB     -> 3
-  Version v3:
-     /SRC/B/barB     -> 5
-     /SRC/B/fooB     -> 3
-  Version v4:
-     /SRC/A/B/barAB  -> 2
-     /SRC/A/B/fooAB  -> 1
-     /SRC/B/barB     -> 5
-     /SRC/B/fooB     -> 7
-  */
 }

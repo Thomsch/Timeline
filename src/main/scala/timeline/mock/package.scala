@@ -2,7 +2,10 @@ package timeline
 
 package object mock {
 
+  // Mocks the changes in the version control system. The mocked information can be retrieved from Git commands in a
+  // real implementation.
   object vcs {
+
     import timeline.IO._
 
     // Changes for each version of our mock git repo
@@ -12,11 +15,11 @@ package object mock {
         Set(File("app"))
       )
 
-    val version2: Folder =  // Adding fooA and fooB
+    val version2: Folder = // Adding fooA and fooB
       Folder("SRC",
         Set(
           Folder("A", Set.empty, Set(File("fooA"))),
-          Folder("B", Set.empty,Set(File("fooB")))
+          Folder("B", Set.empty, Set(File("fooB")))
         )
       )
 
@@ -43,7 +46,7 @@ package object mock {
     def getLatestVersion: String = "v4"
 
     def versionRange(from: String, to: String): List[String] = {
-      if(from != "v1" || to != "v4") List.empty else {
+      if (from != "v1" || to != "v4") List.empty else {
         List("v1", "v2", "v3", "v4")
       }
     }
@@ -51,7 +54,7 @@ package object mock {
     def getDiffs(version: Version): Option[FileSystem] = versionRetrieval.get(version.id)
   }
 
-
+  // Mocks an analysis on a file, returning an integer as a result (e.g., number of methods for the file).
   object analyzer {
     def run(task: Task): Map[IO.Path, Int] = { // Parametrize
       task.artifacts.map(path => (path, staticAnalyzer(task.version.id, path))).toMap
