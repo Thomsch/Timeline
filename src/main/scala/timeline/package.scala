@@ -60,7 +60,7 @@ package object timeline {
   type Error = String
 
   def repositoryExists(repository: Repository): Either[Error, Boolean] = {
-    Either.cond(!repository.url.isBlank, true, "The repository is missing")
+    Either.cond(!repository.url.isBlank, true, "The repository is missing") // Mock implementation
   }
 
   def retrieveVersions(history: History): Either[Error, List[Version]] = {
@@ -125,7 +125,7 @@ package object timeline {
   type Cache = Map[Version, Set[(Path, Int)]]
 
   def executeTasks(tasks: Set[Task]): Either[Error, Cache] = {
-    // Group the result of each task by version
+    // Execute the tasks and aggregates the result in a cache.
     Right(tasks.map(task => (task.version, analyze(task))).groupBy(_._1).map(e => e._1 -> e._2.flatMap(_._2)))
   }
 
