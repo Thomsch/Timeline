@@ -130,22 +130,38 @@ package object timeline {
   }
 
   @tailrec
-  def postProcess(versions: List[Version], cache: Cache, carry: Set[(Path, Int)] = Set.empty): Unit = {
+  def traverseHistory[A](versions: List[Version], cache: Cache, carry: Set[(Path, Int)] = Set.empty)(implicit p: HistoryProcessor[A]): Unit = {
     versions match {
       case head :: tail =>
-        println(s"Version ${head.id}:")
+        p.version(head)
         val option = cache.get(head)
 
         option match {
           case Some(data) =>
             val accResult = data ++ carry.filter(oldTuple => !data.map(tuple => tuple._1).contains(oldTuple._1))
-            accResult.toList.sortWith((left, right) => left._1.compareTo(right._1) < 0).foreach(tuple => println(f"   ${tuple._1}%-15s -> ${tuple._2}"))
-            postProcess(tail, cache, accResult)
+            accResult.toList.sortWith((left, right) => left._1.compareTo(right._1) < 0).foreach(tuple => p.artifact(tuple._1, tuple._2))
+            traverseHistory(tail, cache, accResult)
           case None =>
-            println("   No files matching the query")
-            postProcess(tail, cache, carry)
+            p.noMatch()
+            traverseHistory(tail, cache, carry)
         }
       case Nil =>
+    }
+  }
+
+  trait HistoryProcessor[A] {
+    def version(v: Version) : A
+    def artifact(artifact: Path, result: Int) : A
+    def noMatch() : A
+  }
+
+  object HistoryProcessorInstances {
+    implicit val printer: HistoryProcessor[Unit] = new HistoryProcessor[Unit] {
+      def version(v: Version): Unit = println(s"Version ${v.id}:")
+
+      def artifact(artifact: Path, result: Int): Unit = println(f"   $artifact%-15s -> $result")
+
+      def noMatch(): Unit = println("   No files matching the query")
     }
   }
 }

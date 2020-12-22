@@ -16,12 +16,13 @@ object Timeline extends App {
     cache <- executeTasks(tasks) // Run the tasks and accumulate results in a cache
   } yield (versions, cache)
 
+  import timeline.HistoryProcessorInstances.printer
   results match {
     // If there is an error, print it.
     case Left(value) => println(s"Error: $value")
 
     // Print the analysis result for each file matching the artifact specification (what) for selected versions.
-    case Right((versions, cache)) => postProcess(versions, cache)
+    case Right((versions, cache)) => traverseHistory(versions, cache)
     /* Will output:
     Version v1:
       No files matching the query
